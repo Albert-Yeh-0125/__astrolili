@@ -53,6 +53,29 @@ def handle_follow(event):
 		replyToken=event.reply_token,
 		messages=[TextMessage(text='Thank You!')]
 	))
+
+## オウム返しメッセージ
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_message(event):
+	## APIインスタンス化
+	with ApiClient(configuration) as api_client:
+		line_bot_api = MessagingApi(api_client)
+
+	## 受信メッセージの中身を取得
+	received_message = event.message.text
+
+	## APIを呼んで送信者のプロフィール取得
+	profile = line_bot_api.get_profile(event.source.user_id)
+	display_name = profile.display_name
+
+	## 返信メッセージ編集
+	reply = f'{display_name}さんのメッセージ\n{received_message}'
+
+	## オウム返し
+	line_bot_api.reply_message(ReplyMessageRequest(
+		replyToken=event.reply_token,
+		messages=[TextMessage(text=reply)]
+	))
 	
 ## 起動確認用ウェブサイトのトップページ
 @app.route('/', methods=['GET'])
