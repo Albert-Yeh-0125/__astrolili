@@ -23,22 +23,20 @@ app = Flask(__name__)
 configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
+#所有從LINE平台傳來的事件都會先經過callback再轉到 handler 進行處理
 @app.route("/callback", methods=['POST'])
 def callback():
 	# get X-Line-Signature header value
 	signature = request.headers['X-Line-Signature']
-
 	# get request body as text
 	body = request.get_data(as_text=True)
 	app.logger.info("Request body: " + body)
-
 	# handle webhook body
 	try:
 		handler.handle(body, signature)
 	except InvalidSignatureError:
 		app.logger.info("Invalid signature. Please check your channel access token/channel secret.")
 		abort(400)
-
 	return 'OK'
 
 ## 友達追加時のメッセージ送信
@@ -54,28 +52,25 @@ def handle_follow(event):
 		messages=[TextMessage(text='Thank You!')]
 	))
 
-## オウム返しメッセージ
+#文字訊息處理
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-	## APIインスタンス化
+	#APIインスタンス化
 	with ApiClient(configuration) as api_client:
 		line_bot_api = MessagingApi(api_client)
 
-	## 受信メッセージの中身を取得
+	#取得傳入訊息
 	received_message = event.message.text
-
-	## APIを呼んで送信者のプロフィール取得
-	profile = line_bot_api.get_profile(event.source.user_id)
-	display_name = profile.display_name
-
-	## 返信メッセージ編集
-	reply = f'{display_name}さんのメッセージ\n{received_message}'
-
-	## オウム返し
-	line_bot_api.reply_message(ReplyMessageRequest(
-		replyToken=event.reply_token,
-		messages=[TextMessage(text=reply)]
-	))
+	#關鍵字apple
+	if received_message == 'apple':
+		line_bot_api.reply_message(ReplyMessageRequest(
+			replyToken=event.reply_token,
+			messages=[TextMessage(text='This is keyword for apple!')]))
+	#預設回聲
+	else:
+		line_bot_api.reply_message(ReplyMessageRequest(
+			replyToken=event.reply_token,
+			messages=[TextMessage(text=received_message)]))
 	
 ## 起動確認用ウェブサイトのトップページ
 @app.route('/', methods=['GET'])
