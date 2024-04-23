@@ -4,12 +4,14 @@ from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
 	ApiClient, Configuration, MessagingApi,
 	ReplyMessageRequest, PushMessageRequest,
-	TextMessage, PostbackAction
+	TextMessage, PostbackAction, ImageMessage
 )
 from linebot.v3.webhooks import (
 	FollowEvent, MessageEvent, PostbackEvent, TextMessageContent
 )
-import os
+from imgurpython import ImgurClient
+from config import client_id, client_secret, album_id, access_token, refresh_token
+import os, random
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -66,6 +68,16 @@ def handle_message(event):
 		line_bot_api.reply_message(ReplyMessageRequest(
 			replyToken=event.reply_token,
 			messages=[TextMessage(text='This is keyword for apple!')]))
+	#圖片
+	elif received_message == 'image':
+		client = ImgurClient(client_id, client_secret)
+		images = client.get_album_images(album_id)
+		index = random.randint(0, len(images) - 1)
+		url = images[index].link
+		line_bot_api.reply_message(ReplyMessageRequest(
+			replyToken=event.reply_token,
+			messages=[ImageMessage(original_content_url=url,preview_image_url=url)]))
+		
 	#預設回聲
 	else:
 		line_bot_api.reply_message(ReplyMessageRequest(
